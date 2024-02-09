@@ -2,17 +2,37 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-//debug printing
-#define DEBUG 1
-#define DEBUG_PRINT(args) do { if (DEBUG) std::cout << args << std::endl; } while(0)
-
-#define WIDTH 800
-#define HEIGHT 600
-
-
 void framebuffer_size_callback(GLFWwindow * window, int width, int height);
 void processInput(GLFWwindow * window);
+void createShaders();
+void destroyShaders();
 void render();
+
+//the verticies for the triangle to be drawn
+float verticies[] =
+{
+	-0.5f, -0.5f, 0.0f,
+	 0.5f, -0.5f, 0.0f,
+	 0.0f,  0.5f, 0.0f
+};
+
+const char* vertexShaderSource = "#version 330 core\n"
+"layout(location = 0) in vec3 aPos;\n"
+"void main()\n"
+"{\n"
+"	gl_Position = vec4(a.Pos.x, aPos.y, aPos.z, 1.0);\n"
+"}\0";
+
+const char* fragmentShaderSource = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"void main()\n"
+"{\n"
+"	FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"}\0";
+
+unsigned int vertexShader;
+unsigned int fragmentShader;
+unsigned int shaderProgram;
 
 void framebuffer_size_callback(GLFWwindow * window, int width, int height)
 {
@@ -24,25 +44,64 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 }
+
+void createShaders()
+{
+	//VERTEX SHADER
+	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+
+	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+	glCompileShader(vertexShader);
+
+	int success;
+	GLchar infoLog[512];
+	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+
+	if (!success)
+	{
+		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
+		std::cout << "ERROR!! Unable to compile shader\n" << infoLog << std::endl;
+	}
+
+	//FRAGMENT SHADER
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+	glCompileShader(fragmentShader);
+
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+
+	if (!success)
+	{
+		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+		std::cout << "ERROR!! Unable to compile shader\n" << infoLog << std::endl;
+	}
+	shaderProgram = glCreateProgram();
+
+	glAttachShader(shaderProgram, vertexShader);
+	glAttachShader(shaderProgram, fragmentShader);
+	glLinkProgram(shaderProgram);
+
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+	if (!success)
+	{
+		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+		std::cout << "ERROR!! Unable to link shader program\n" << infoLog << std::endl;
+	}
+}
+
+void destroyShaders()
+{
+	glDeleteShader(vertexShader);
+	glDeleteShader(fragmentShader);
+}
+
 void render()
 {
-	GLfloat verticies[] =
-	{
-		-0.5f, -0.5f, 0.0f,
-		 0.5f, -0.5f, 0.0f,
-		 0.0f,  0.5f, 0.0f
-	};
-
-	//declare vbo and generate and bind it to a buffer and copy it
-	GLuint VBO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
-
-
 
 }
-int main(int argc, char** argv)
+
+int main()
 {
 	//initialise OpenGL
 	glfwInit();
@@ -54,34 +113,52 @@ int main(int argc, char** argv)
 	GLFWwindow* window = glfwCreateWindow(800, 600, "HelloOpenGL", NULL, NULL);
 	if (window == NULL)
 	{
-		DEBUG_PRINT("Failed to create GLFW Window :(");
+		std::cout << "Failed to create GLFW Window :(" << std::endl;
 		glfwTerminate();
 		return -1;
 	}
-	DEBUG_PRINT("GLFW window successfully created!");
+	std::cout << "GLFW window successfully created!" << std::endl;
 
 	glfwMakeContextCurrent(window);
 
 	//now initialise GLAD
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		DEBUG_PRINT("Failed to initialise GLAD :(");
+		std::cout << "Failed to initialise GLAD :(" << std::endl;
 		return -1;
 	}
-	DEBUG_PRINT("GLAD initialised!");
+	std::cout << "GLAD initialised!" << std::endl;
 
 	//set viewport dimentions
-	glViewport(0, 0, WIDTH, HEIGHT);
+	glViewport(0, 0, 800, 600);
 
 	//register callback
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+	//declare VBO and generate buffers
+	unsigned int VBO;
+	glGenBuffers(1, &VBO);
+	
+	//now create the shaders
+	createShaders();
 	// *******************************************
 	// * HERE BE WHERE THE RENDER LOOP BEGINS!!! *
 	// *******************************************
 	while (!glfwWindowShouldClose(window))
 	{
+		//process any user input - monitoring for esc to close app
 		processInput(window);
+
+		//copy triangle verts into the vbo
+		glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
+		
+		//set attribs pointers
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		
+		//use compiled shader program for rendering
+		glUseProgram(shaderProgram);
 		
 		//do rendering
 		render();
@@ -90,6 +167,8 @@ int main(int argc, char** argv)
 		glfwPollEvents();
 		glfwSwapBuffers(window);
 	}
+	//finally clear up compiled shaders and close GLFW lib
+	destroyShaders();
 	glfwTerminate();
 
 	return 0;
