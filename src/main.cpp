@@ -20,7 +20,7 @@ const char* vertexShaderSource = "#version 330 core\n"
 "layout(location = 0) in vec3 aPos;\n"
 "void main()\n"
 "{\n"
-"	gl_Position = vec4(a.Pos.x, aPos.y, aPos.z, 1.0);\n"
+"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
 "}\0";
 
 const char* fragmentShaderSource = "#version 330 core\n"
@@ -33,6 +33,8 @@ const char* fragmentShaderSource = "#version 330 core\n"
 unsigned int vertexShader;
 unsigned int fragmentShader;
 unsigned int shaderProgram;
+unsigned int VBO;
+unsigned int VAO;
 
 void framebuffer_size_callback(GLFWwindow * window, int width, int height)
 {
@@ -60,7 +62,7 @@ void createShaders()
 	if (!success)
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR!! Unable to compile shader\n" << infoLog << std::endl;
+		std::cout << "ERROR!! Unable to compile vertex shader\n" << infoLog << std::endl;
 	}
 
 	//FRAGMENT SHADER
@@ -74,7 +76,7 @@ void createShaders()
 	if (!success)
 	{
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		std::cout << "ERROR!! Unable to compile shader\n" << infoLog << std::endl;
+		std::cout << "ERROR!! Unable to compile fragment shader\n" << infoLog << std::endl;
 	}
 	shaderProgram = glCreateProgram();
 
@@ -88,17 +90,19 @@ void createShaders()
 		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
 		std::cout << "ERROR!! Unable to link shader program\n" << infoLog << std::endl;
 	}
-}
-
-void destroyShaders()
-{
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 }
 
+
 void render()
 {
-
+	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	// use compiled shader program for rendering
+	glUseProgram(shaderProgram);
+	glBindVertexArray(VAO);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 int main()
@@ -135,12 +139,27 @@ int main()
 	//register callback
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	//declare VBO and generate buffers
-	unsigned int VBO;
+	//generate buffers for VBO
 	glGenBuffers(1, &VBO);
+
+	//do same for VAO
+	glGenVertexArrays(1, &VAO);
 	
 	//now create the shaders
 	createShaders();
+
+	//bind the vao
+	glBindVertexArray(VAO);
+
+	//copy triangle verts into the vbo
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
+
+	//set attribs pointers
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	//now enable vao
+	glEnableVertexAttribArray(0);
+
 	// *******************************************
 	// * HERE BE WHERE THE RENDER LOOP BEGINS!!! *
 	// *******************************************
@@ -149,17 +168,6 @@ int main()
 		//process any user input - monitoring for esc to close app
 		processInput(window);
 
-		//copy triangle verts into the vbo
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
-		
-		//set attribs pointers
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-		
-		//use compiled shader program for rendering
-		glUseProgram(shaderProgram);
-		
 		//do rendering
 		render();
 
@@ -167,8 +175,9 @@ int main()
 		glfwPollEvents();
 		glfwSwapBuffers(window);
 	}
-	//finally clear up compiled shaders and close GLFW lib
-	destroyShaders();
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteProgram(shaderProgram);
 	glfwTerminate();
 
 	return 0;
