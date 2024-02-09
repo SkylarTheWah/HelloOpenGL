@@ -12,6 +12,7 @@
 
 void framebuffer_size_callback(GLFWwindow * window, int width, int height);
 void processInput(GLFWwindow * window);
+void render();
 
 void framebuffer_size_callback(GLFWwindow * window, int width, int height)
 {
@@ -23,7 +24,24 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 }
+void render()
+{
+	GLfloat verticies[] =
+	{
+		-0.5f, -0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
+		 0.0f,  0.5f, 0.0f
+	};
 
+	//declare vbo and generate and bind it to a buffer and copy it
+	GLuint VBO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
+
+
+
+}
 int main(int argc, char** argv)
 {
 	//initialise OpenGL
@@ -66,8 +84,7 @@ int main(int argc, char** argv)
 		processInput(window);
 		
 		//do rendering
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		render();
 
 		//poll events then swap the buffers
 		glfwPollEvents();
