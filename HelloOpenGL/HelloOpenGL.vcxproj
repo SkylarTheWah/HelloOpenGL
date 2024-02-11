@@ -19,8 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\debug.cpp" />
     <ClCompile Include="..\src\glad.c" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\shader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\debug.h" />
+    <ClInclude Include="..\include\glad\glad.h" />
+    <ClInclude Include="..\include\GLFW\glfw3.h" />
+    <ClInclude Include="..\include\shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\shaders\frag.glsl" />
+    <None Include="..\shaders\vert.glsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -114,6 +126,8 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
