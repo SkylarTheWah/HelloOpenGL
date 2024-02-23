@@ -6,10 +6,19 @@
 #include <GLFW/glfw3.h>
 
 //debug logging
-#define DEBUG_LOG(args) do { std::cout << args << std::endl; } while(0);
+#define DEBUG_LOG(args) do { std::cerr << args << std::endl; } while(0);
 
 //checking OGL errors
-#define glCheckError() _glCheckError(__FILE__, __LINE__)
-GLenum _glCheckError(const char* file, int line);
+class Debug
+{
+public:
+	static void _glCheckError(const char* file, int line, const char* stmt);
+};
+
+#ifdef DEBUG
+#define glCheckError(stmt) do { stmt; Debug::_glCheckError(__FILE__, __LINE__, #stmt); } while(0)
+#else
+#define glCheckError(stmt) stmt
+#endif
 
 #endif //DEBUG_H

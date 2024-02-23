@@ -6,58 +6,66 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "shader.h"
+//#include "shader.h"
 
-#ifndef DEBUG
 #define DEBUG 1
+
 #include "debug.h"
-#endif
-
-
-
 //forward declarations
-
 void framebuffer_size_callback(GLFWwindow * window, int width, int height);
 void processInput(GLFWwindow * window);
 void createBuffers();
 void destroyBuffers();
 void createShaders();
 void render();
+void printAdapterInfo();
 
 //our window handle
 GLFWwindow* window;
 
-//the verticies for the triangle to be drawn
-float verticies[] = {
-	//positions			//colours
-	 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, //bottom right
-	-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, //bottom left
-	 0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f //top
+// first triangle
+float tri1[] = {
+	-0.9f, -0.5f, 0.0f,  // left 
+	-0.0f, -0.5f, 0.0f,  // right
+	-0.45f, 0.5f, 0.0f  // top 
+};
+
+// second triangle
+float tri2[] = {
+	0.0f, -0.5f, 0.0f,  // left
+	0.9f, -0.5f, 0.0f,  // right
+	0.45f, 0.5f, 0.0f   // top 
 };
 
 const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"		//attrib pos 0
-"layout (location = 1) in vec3 aColor;\n"	//attrib pos 1
-"out vec3 ourColor;\n" //colour to send to frag shader
+"layout (location = 0) in vec3 aPos;\n"
 "void main()\n"
 "{\n"
 "	gl_Position = vec4(aPos, 1.0f);\n"
-"	ourColor = aColor;\n"
 "}\0";
 
-const char* fragmentShaderSource = "#version 330 core\n"
+const char* pinkFragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-"in vec3 ourColor;\n"
 "void main()\n"
 "{\n"
-"	FragColor = vec4(ourColor, 1.0f);\n"
+"	FragColor = vec4(1.0f, 0.0f, 1.0f, 1.0f);\n"
+"}\0";
+
+const char* yellowFragmentShaderSource = "#version 330 core\n"
+"out vec4 FragColor;\n"
+"void main()\n"
+"{\n"
+"	FragColor = vec4(1.0f, 1.0f, 0.0f, 1.0f);\n"
 "}\0";
 
 unsigned int vertexShader;
-unsigned int fragmentShader;
-unsigned int shaderProgram;
-unsigned int VBO;
-unsigned int VAO;
+unsigned int pinkFragmentShader;
+unsigned int yellowFragmentShader;
+unsigned int pinkShaderProgram;
+unsigned int yellowShaderProgram;
+GLuint vao[2];
+GLuint vbo[2];
+
 
 void framebuffer_size_callback(GLFWwindow * window, int width, int height)
 {
@@ -70,7 +78,7 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 }
 
-bool initialiseGL(const int height, const int width)
+static bool initialiseGL(const int height, const int width)
 {
 	//initialise OpenGL
 	glfwInit();
@@ -84,7 +92,7 @@ bool initialiseGL(const int height, const int width)
 	window = glfwCreateWindow(height, width, "HelloOpenGL", NULL, NULL);
 	if (window == NULL)
 	{
-		DEBUG_LOG("Failed to create GLFW Window :(");
+		DEBUG_LOG("ERROR!! Failed to create GLFW Window :(");
 		glfwTerminate();
 		return false;
 	}
@@ -95,7 +103,7 @@ bool initialiseGL(const int height, const int width)
 	//now initialise GLAD
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		DEBUG_LOG("Failed to initialise GLAD :(");
+		DEBUG_LOG("ERROR!! Failed to initialise GLAD :(");
 		return false;
 	}
 	DEBUG_LOG("GLAD initialised!");
@@ -105,30 +113,32 @@ bool initialiseGL(const int height, const int width)
 void createBuffers()
 {
 	//generate buffs
-	glGenBuffers(1, &VBO);
-	glGenVertexArrays(1, &VAO);
+	glGenBuffers(2, vao);
+	glGenVertexArrays(2, vbo);
 
-	//bind the vao
-	glBindVertexArray(VAO);
-
-	//copy triangle verts into the vbo
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verticies), verticies, GL_STATIC_DRAW);
-
-	//set pos attrib pointers
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	//tri1
+	glBindVertexArray(vao[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(tri1), tri1, GL_STATIC_DRAW);
+	glCheckError(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
 	glEnableVertexAttribArray(0);
 
-	//set colour attrib pointers
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
+	//tri2
+	glBindVertexArray(vao[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(tri2), tri2, GL_STATIC_DRAW);
+	glCheckError(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
+	glEnableVertexAttribArray(0);
+
+	//glCheckError();
 }
 
 void destroyBuffers()
 {
-	glDeleteVertexArrays(1, &VAO);
-	glDeleteBuffers(1, &VBO);
-	glDeleteProgram(shaderProgram);
+	glDeleteVertexArrays(2, vao);
+	glDeleteBuffers(2, vbo);
+	glDeleteProgram(pinkShaderProgram);
+	glDeleteProgram(yellowShaderProgram);
 }
 
 void createShaders()
@@ -149,33 +159,61 @@ void createShaders()
 		DEBUG_LOG("ERROR!! Unable to compile vertex shader!!" << infoLog);
 	}
 
-	//FRAGMENT SHADER
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	//PINK FRAGMENT SHADER
+	pinkFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
+	glShaderSource(pinkFragmentShader, 1, &pinkFragmentShaderSource, NULL);
+	glCompileShader(pinkFragmentShader);
 
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+	glGetShaderiv(pinkFragmentShader, GL_COMPILE_STATUS, &success);
 
 	if (!success)
 	{
-		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
+		glGetShaderInfoLog(pinkFragmentShader, 512, NULL, infoLog);
 		DEBUG_LOG("ERROR!! Unable to compile fragment shader" << infoLog);	
 	}
-	shaderProgram = glCreateProgram();
+	//PINK SHADER PROG
+	pinkShaderProgram = glCreateProgram();
 
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
+	glAttachShader(pinkShaderProgram, vertexShader);
+	glAttachShader(pinkShaderProgram, pinkFragmentShader);
+	glLinkProgram(pinkShaderProgram);
 
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+	glGetProgramiv(pinkShaderProgram, GL_LINK_STATUS, &success);
 	if (!success)
 	{
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+		glGetProgramInfoLog(pinkShaderProgram, 512, NULL, infoLog);
+		DEBUG_LOG("ERROR!! Unable to link shader program" << infoLog);
+	}
+	glDeleteShader(pinkFragmentShader);
+	
+	//YELLOWFRAGMENT SHADER
+	yellowFragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+	glShaderSource(yellowFragmentShader, 1, &yellowFragmentShaderSource, NULL);
+	glCompileShader(yellowFragmentShader);
+
+	glGetShaderiv(yellowFragmentShader, GL_COMPILE_STATUS, &success);
+
+	if (!success)
+	{
+		glGetShaderInfoLog(yellowFragmentShader, 512, NULL, infoLog);
+		DEBUG_LOG("ERROR!! Unable to compile fragment shader" << infoLog);	
+	}
+	yellowShaderProgram = glCreateProgram();
+
+	glAttachShader(yellowShaderProgram, vertexShader);
+	glAttachShader(yellowShaderProgram, yellowFragmentShader);
+	glLinkProgram(yellowShaderProgram);
+
+	glGetProgramiv(yellowShaderProgram, GL_LINK_STATUS, &success);
+	if (!success)
+	{
+		glGetProgramInfoLog(yellowShaderProgram, 512, NULL, infoLog);
 		DEBUG_LOG("ERROR!! Unable to link shader program" << infoLog);	
 	}
 	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
+	glDeleteShader(yellowFragmentShader);
 }
 
 void render()
@@ -184,9 +222,27 @@ void render()
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	//draw the tris
-	glBindVertexArray(VAO);
+	//draw tri1
+	glUseProgram(pinkShaderProgram);
+	glBindVertexArray(vao[0]);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+	//draw tri2
+	glUseProgram(yellowShaderProgram);
+	glBindVertexArray(vao[1]);
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+}
+
+void printAdapterInfo()
+{
+	const GLubyte* glVendor = glGetString(GL_VENDOR);
+	const GLubyte* glRenderer =  glGetString(GL_RENDERER);
+	const GLubyte* glVersion = glGetString(GL_VERSION);
+	const GLubyte* glSLVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
+	DEBUG_LOG("GL Vendor name: " << glVendor);
+	DEBUG_LOG("GL Adapter name: " << glRenderer);
+	DEBUG_LOG("GL Version: " << glVersion);
+	DEBUG_LOG("GLSL version: " << glSLVersion);
 }
 
 int main()
@@ -202,22 +258,17 @@ int main()
 
 	//set viewport dimentions
 	glViewport(0, 0, height, width);
+	DEBUG_LOG("Viewport initialised with height: " << height << " and width: " << width);
 
+	printAdapterInfo();
 	//register callback
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-	//int nrAttribs;
-	//glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttribs);
-	//std::cout << "max nr of vert attribs: " << nrAttribs << std::endl;
 
 	//now create the shaders
 	createShaders();
 
 	//now create buffs
 	createBuffers();
-
-	//access shader
-	glUseProgram(shaderProgram);
 
 	// *******************************************
 	// * HERE BE WHERE THE RENDER LOOP BEGINS!!! *

@@ -1,6 +1,6 @@
 #include "debug.h"
 
-GLenum _glCheckError(const char* file, int line)
+void Debug::_glCheckError(const char* file, int line, const char* stmt)
 {
 	GLenum code;
 	while ((code = glGetError()) != GL_NO_ERROR)
@@ -16,7 +16,6 @@ GLenum _glCheckError(const char* file, int line)
 			case GL_OUT_OF_MEMORY: err = "GL_OUT_OF_MEMORY"; break;
 			case GL_INVALID_FRAMEBUFFER_OPERATION: err = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
 		}
-		DEBUG_LOG(err << " | " << file << " (" << line << ")");
-		return code;
+		DEBUG_LOG(err << " (" << code << ") | " << file << " (" << line << "), " << stmt);
 	}
 }
