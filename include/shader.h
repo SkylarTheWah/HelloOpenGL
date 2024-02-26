@@ -10,11 +10,12 @@
 #include <sstream>
 #include <iostream>
 
+#define INFO_BUFFER_SIZE 1024
 class Shader
 {
 public:
 	//program id
-	unsigned int ID;
+	GLuint ID;
 
 	//constructer
 	Shader(const char* vertPath, const char* fragPath);
@@ -25,6 +26,9 @@ public:
 	void setBool(const std::string& name, bool val) const;
 	void setInt(const std::string& name, int val) const;
 	void setFloat(const std::string& name, float val) const;
+
+private:
+	void checkCompileErrors(GLuint shader, std::string type);
 };
 
-#endif
+#endif //SHADER_H

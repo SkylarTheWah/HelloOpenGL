@@ -29,8 +29,7 @@ Shader::Shader(const char* vertexPath, const char* fragPath)
 	}
 	catch (std::ifstream::failure e)
 	{
-		DEBUG_LOG("ERROR: Shader file not successfully read");
-		DEBUG_LOG(e.what());
+		DEBUG_LOG("ERROR: Shader file not successfully read!!\n" << e.what());
 	}
 	//save parsed shader code into temp bufs
 	const char* vshCode = vertCode.c_str();
@@ -45,35 +44,21 @@ Shader::Shader(const char* vertexPath, const char* fragPath)
 	vert = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vert, 1, &vshCode, NULL);
 	glCompileShader(vert);
-	glGetShaderiv(vert, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vert, 512, NULL, infoLog);
-		DEBUG_LOG("ERROR: Vertex shader compilation failed...\n" << infoLog);
-	}
+	checkCompileErrors(vert, "vertex");
 
 	//frag
 	frag = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(frag, 1, &fshCode, NULL);
 	glCompileShader(frag);
 	glGetShaderiv(frag, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(frag, 512, NULL, infoLog);
-		DEBUG_LOG("ERROR: Fragment shader compilation failed...\n" << infoLog);
-	}
+	checkCompileErrors(frag, "fragment");
 
 	//link to shader binary for submission to gpu
 	ID = glCreateProgram();
 	glAttachShader(ID, vert);
 	glAttachShader(ID, frag);
 	glLinkProgram(ID);
-	glGetProgramiv(ID, GL_LINK_STATUS, &success);
-	if (!success)
-	{
-		glGetProgramInfoLog(ID, 512, NULL, infoLog);
-		DEBUG_LOG("ERROR: Fragment shader compilation failed...\n" << infoLog);
-	}
+	checkCompileErrors(ID, "program");
 
 	//delete shaders
 	glDeleteShader(vert);
@@ -98,4 +83,29 @@ void Shader::setInt(const std::string& name, int val) const
 void Shader::setFloat(const std::string& name, float val) const
 {
 	glUniform1f(glGetUniformLocation(ID, name.c_str()), val);
+}
+
+void Shader::checkCompileErrors(GLuint shader, std::string type)
+{
+	GLint success;
+	char infoLog[INFO_BUFFER_SIZE];
+
+	if (type != "program")
+	{
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+		if (!success)
+		{
+			glGetShaderInfoLog(shader, INFO_BUFFER_SIZE, NULL, infoLog);
+			DEBUG_LOG("ERROR: Shader compilation failed of the type: " << type << "\n" << "infoLog: " << infoLog << std::endl);
+		}
+		else
+		{
+			glGetProgramiv(shader, GL_LINK_STATUS, &success);
+			if (!success)
+			{
+				glGetProgramInfoLog(shader, INFO_BUFFER_SIZE, NULL, infoLog);
+				DEBUG_LOG("ERROR: Shader link error failed of the type: " << type << "\n" << "infoLog: " << infoLog << std::endl);
+			}
+		}
+	}
 }

@@ -16,6 +16,6 @@ void Debug::_glCheckError(const char* file, int line, const char* stmt)
 			case GL_OUT_OF_MEMORY: err = "GL_OUT_OF_MEMORY"; break;
 			case GL_INVALID_FRAMEBUFFER_OPERATION: err = "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
 		}
-		DEBUG_LOG(err << " (" << code << ") | " << file << " (" << line << "), " << stmt);
+		DEBUG_LOG("ERROR: " << err << " (" << code << ") | " << file << " (" << line << "), " << stmt);
 	}
 }
