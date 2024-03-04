@@ -135,7 +135,6 @@ int main()
 	//now create the shaders
 	Shader shaders = Shader::Shader("../shaders/vert.glsl", "../shaders/frag.glsl");
 	
-
 	//now create buffs
 	createBuffers();
 
